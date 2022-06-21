@@ -1,0 +1,111 @@
+#!/usr/bin/php
+<?php
+
+use Proxmox\Command\CommandBuild;
+use Proxmox\Command\CommandCopy;
+use Proxmox\Command\CommandDestroy;
+use Proxmox\Command\CommandExecute;
+use Proxmox\Command\CommandListVMs;
+use Proxmox\Command\CommandUpstreamDeploy;
+use Proxmox\Command\CommandUpstreamGenerate;
+use Proxmox\Controller\CommandController;
+use Proxmox\Controller\ProxmoxController;
+use Proxmox\Proxmox;
+
+include_once $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
+
+// TODO: refactor settings
+$ipPool14 = array_map(function ($octet) {
+	return '192.168.14.' . $octet;
+}, range(200, 219));
+
+$ipPool15 = array_map(function ($octet) {
+	return '192.168.15.' . $octet;
+}, range(10, 210));
+
+$settings = [
+	'proxmox' => [
+		'endpoint' => $_ENV['PROXMOX_ENDPOINT'],
+		'token' => $_ENV['PROXMOX_TOKEN'],
+	],
+	'build' => [
+		'__default__' => [
+			'targetNode' => 'pve3',
+			'template' => 'template-current-live-v2',
+			'namePrefix' => 'feature-',
+			'hostTemplate' => '{name}.dev.freelance.nl',
+			'network' => '192.168.14.0/23',
+			'ippool' => $ipPool15,
+			'upstream' => 'feature',
+		],
+		'dev' => [
+			'targetNode' => 'pve4',
+			'template' => 'template-dev',
+			'namePrefix' => 'dev-',
+			'hostTemplate' => '{name}.dev.freelance.nl',
+			'network' => '192.168.14.0/23',
+			'ippool' => $ipPool14,
+			'upstream' => 'dev',
+		],
+		'global' => [
+			'targetNode' => 'pve3',
+			'template' => 'template-current-live-v2',
+			'namePrefix' => 'global-',
+			'hostTemplate' => '{name}.dev.freelance.nl',
+			'network' => '192.168.14.0/23',
+			'ippool' => $ipPool15,
+			'upstream' => 'global',
+		],
+		'epic' => [
+			'targetNode' => 'pve3',
+			'template' => 'template-current-live-v2',
+			'namePrefix' => 'epic-',
+			'hostTemplate' => '{name}.dev.freelance.nl',
+			'network' => '192.168.14.0/23',
+			'ippool' => $ipPool15,
+			'upstream' => 'epic',
+		],
+	],
+];
+
+$commandController = new CommandController();
+$commandController->setSetting('proxmox', $settings['proxmox']);
+
+$proxmox = new Proxmox($commandController->getSetting('proxmox.endpoint'));
+$proxmox->setToken($commandController->getSetting('proxmox.token'));
+
+$commandController->setSetting('environment', '__default__');
+if ($commandController->hasArgument('vm')) {
+	$vm = $commandController->getArgument('vm');
+
+	$parts = \explode('-', $vm, 2);
+	$environment = \array_shift($parts);
+
+	if (\count($parts) === 0) {
+		$commandController->setSetting('environment', 'global');
+		// $commandController->setSetting('partialName', $vm);
+	} else {
+		$commandController->setSetting('environment', $environment);
+		// $commandController->setSetting('partialName', $parts[0]);
+	}
+
+	$commandController->setSetting('rawVm', $vm);
+}
+
+$commandController->setSetting('build', $settings['build'][$commandController->getSetting('environment')] ?? $settings['build']['__default__']);
+// $commandController->setSetting('vm', $commandController->getSetting('build.namePrefix') . $commandController->getSetting('partialName'));
+$commandController->setSetting('vm', $commandController->getSetting('build.namePrefix') . $commandController->getSetting('rawVm'));
+
+$proxmoxController = new ProxmoxController($commandController->getSetting('build.targetNode'), $commandController->getSetting('build.network'));
+$proxmoxController->setProxmox($proxmox);
+$proxmoxController->addToIpPool($commandController->getSetting('build.ippool'));
+
+$commandController->addCommand(new CommandListVMs($proxmoxController));
+$commandController->addCommand(new CommandBuild($proxmoxController));
+$commandController->addCommand(new CommandDestroy($proxmoxController));
+$commandController->addCommand(new CommandExecute($proxmoxController));
+$commandController->addCommand(new CommandCopy($proxmoxController));
+$commandController->addCommand(new CommandUpstreamGenerate($proxmoxController));
+$commandController->addCommand(new CommandUpstreamDeploy($proxmoxController));
+
+$commandController->runCommand($commandController->getArgument('action'));
