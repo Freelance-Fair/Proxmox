@@ -12,7 +12,7 @@ use Proxmox\Controller\CommandController;
 use Proxmox\Controller\ProxmoxController;
 use Proxmox\Proxmox;
 
-include_once $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
+include_once dirname(__DIR__, 3) . '/autoload.php';
 
 // TODO: refactor settings
 $ipPool14 = array_map(function ($octet) {
