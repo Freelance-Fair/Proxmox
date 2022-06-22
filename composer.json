@@ -1,5 +1,6 @@
 {
-  "name": "freelance-nl/proxmox",
+  "name": "freelance-fair/proxmox",
+  "version": "1.0.0",
   "type": "library",
   "license": "GPL-3.0-only",
   "require": {
