@@ -23,7 +23,7 @@ class CommandDestroy extends AbstractCommand
 
 	public function run(CommandController $commandController): void
 	{
-		$vm = $commandController->getSetting('vm');
+		$vm = $commandController->getArgument('vm');
 
 		try {
 			$this->getProxmoxController()->destroy($vm);

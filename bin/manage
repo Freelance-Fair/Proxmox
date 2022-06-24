@@ -1,6 +1,10 @@
 #!/usr/bin/env php
 <?php
 
+if ($_ENV === []) {
+	$_ENV = getenv();
+}
+
 use Proxmox\Command\CommandBuild;
 use Proxmox\Command\CommandCopy;
 use Proxmox\Command\CommandDestroy;
@@ -14,100 +18,28 @@ use Proxmox\Proxmox;
 
 include_once dirname(__DIR__, 3) . '/autoload.php';
 
-// TODO: refactor settings
-$ipPool14 = array_map(function ($octet) {
-	return '192.168.14.' . $octet;
-}, range(200, 219));
-
-$ipPool15 = array_map(function ($octet) {
-	return '192.168.15.' . $octet;
-}, range(10, 210));
-
+$commandController = new CommandController();
 $settings = [
-	'proxmox' => [
-		'endpoint' => $_ENV['PROXMOX_ENDPOINT'],
-		'token' => $_ENV['PROXMOX_TOKEN'],
-	],
+	'proxmox' => ,
 	'build' => [
-		'__default__' => [
-			'targetNode' => 'pve3',
-			'template' => 'template-current-live-v2',
-			'namePrefix' => 'feature-',
-			'hostTemplate' => $_ENV['PROXMOX_HOST_TEMPLATE'],
-			'network' => $_ENV['PROXMOX_NETWORK'],
-			'ippool' => $ipPool15,
-			'upstream' => 'feature',
-		],
-		'dev' => [
-			'targetNode' => 'pve4',
-			'template' => 'template-dev',
-			'namePrefix' => 'dev-',
-			'hostTemplate' => $_ENV['PROXMOX_HOST_TEMPLATE'],
-			'network' => $_ENV['PROXMOX_NETWORK'],
-			'ippool' => $ipPool14,
-			'upstream' => 'dev',
-		],
-		'global' => [
-			'targetNode' => 'pve3',
-			'template' => 'template-current-live-v2',
-			'namePrefix' => 'global-',
-			'hostTemplate' => $_ENV['PROXMOX_HOST_TEMPLATE'],
-			'network' => $_ENV['PROXMOX_NETWORK'],
-			'ippool' => $ipPool15,
-			'upstream' => 'global',
-		],
-		'epic' => [
-			'targetNode' => 'pve3',
-			'template' => 'template-current-live-v2',
-			'namePrefix' => 'epic-',
-			'hostTemplate' => $_ENV['PROXMOX_HOST_TEMPLATE'],
-			'network' => $_ENV['PROXMOX_NETWORK'],
-			'ippool' => $ipPool15,
-			'upstream' => 'epic',
-		],
-		'hubspot' => [
-			'targetNode' => 'pve2',
-			'template' => null,
-			'namePrefix' => 'hubspot-',
-			'hostTemplate' => $_ENV['PROXMOX_HOST_TEMPLATE'],
-			'network' => $_ENV['PROXMOX_NETWORK'],
-			'ippool' => [],
-			'upstream' => null,
-		],
+		'targetNode' => $commandController->getArgument('target-node') ?? $_ENV['PROXMOX_TARGET_NODE'] ?? 'pve3',
+		'template' => $commandController->getArgument('template') ?? $_ENV['PROXMOX_TEMPLATE'] ?? 'template-current-live-v2',
+		'namePrefix' => $commandController->getArgument('name-prefix') ?? $_ENV['PROXMOX_NAME_PREFIX'] ?? 'feature-',
+		'hostTemplate' => $commandController->getArgument('host-template') ?? $_ENV['PROXMOX_HOST_TEMPLATE'] ?? '',
+		'network' => $commandController->getArgument('network') ?? $_ENV['PROXMOX_NETWORK'] ?? '',
+		'ipPool' => $commandController->getArgument('ip-pool') ?? $_ENV['PROXMOX_IP_POOL'] ?? '',
+		'upstream' => $commandController->getArgument('upstream') ?? $_ENV['PROXMOX_UPSTREAM'] ?? 'feature',
 	],
 ];
-
-$commandController = new CommandController();
 $commandController->setSetting('proxmox', $settings['proxmox']);
+$commandController->setSetting('build', $settings['build']);
 
 $proxmox = new Proxmox($commandController->getSetting('proxmox.endpoint'));
 $proxmox->setToken($commandController->getSetting('proxmox.token'));
 
-$commandController->setSetting('environment', '__default__');
-if ($commandController->hasArgument('vm')) {
-	$vm = $commandController->getArgument('vm');
-
-	$parts = \explode('-', $vm, 2);
-	$environment = \array_shift($parts);
-
-	if (\count($parts) === 0) {
-		$commandController->setSetting('environment', 'global');
-		// $commandController->setSetting('partialName', $vm);
-	} else {
-		$commandController->setSetting('environment', $environment);
-		// $commandController->setSetting('partialName', $parts[0]);
-	}
-
-	$commandController->setSetting('rawVm', $vm);
-}
-
-$commandController->setSetting('build', $settings['build'][$commandController->getSetting('environment')] ?? $settings['build']['__default__']);
-// $commandController->setSetting('vm', $commandController->getSetting('build.namePrefix') . $commandController->getSetting('partialName'));
-$commandController->setSetting('vm', $commandController->getSetting('build.namePrefix') . $commandController->getSetting('rawVm'));
-
 $proxmoxController = new ProxmoxController($commandController->getSetting('build.targetNode'), $commandController->getSetting('build.network'));
 $proxmoxController->setProxmox($proxmox);
-$proxmoxController->addToIpPool($commandController->getSetting('build.ippool'));
+$proxmoxController->addToIpPool($commandController->getSetting('build.ipPool'));
 
 $commandController->addCommand(new CommandListVMs($proxmoxController));
 $commandController->addCommand(new CommandBuild($proxmoxController));

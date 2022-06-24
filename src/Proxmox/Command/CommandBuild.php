@@ -26,7 +26,7 @@ class CommandBuild extends AbstractCommand
 		try {
 			$vmId = $this->getProxmoxController()->build(
 				$commandController->getSetting('build.template'),
-				$commandController->getSetting('vm'),
+				$commandController->getArgument('vm'),
 				(int) ($commandController->getArgument('shuffle') ?? 0)
 			);
 

@@ -23,6 +23,10 @@ class CommandCopy extends AbstractCommand
 
 	public function run(CommandController $commandController): void
 	{
-		$this->getProxmoxController()->fileCopy($commandController->getSetting('vm'), $commandController->getArgument('source'), $commandController->getArgument('target'));
+		$this->getProxmoxController()->fileCopy(
+			$commandController->getArgument('vm'),
+			$commandController->getArgument('source'),
+			$commandController->getArgument('target')
+		);
 	}
 }

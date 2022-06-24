@@ -13,7 +13,7 @@ class CommandExecute extends AbstractCommand
 
 	public function getArguments(): array
 	{
-		return ['vm' => null, 'command' => null, 'nowait' => null];
+		return ['vm' => null, 'command' => null, 'no-wait' => null];
 	}
 
 	public function getRequiredArguments(): array
@@ -24,7 +24,7 @@ class CommandExecute extends AbstractCommand
 	public function run(CommandController $commandController): void
 	{
 		$wait = true;
-		if ($commandController->hasArgument('nowait')) {
+		if ($commandController->hasArgument('no-wait')) {
 			$wait = false;
 		}
 
@@ -34,7 +34,7 @@ class CommandExecute extends AbstractCommand
 		}
 
 		try {
-			$returnValue = $this->getProxmoxController()->execute($commandController->getSetting('vm'), $command, $wait);
+			$returnValue = $this->getProxmoxController()->execute($commandController->getArgument('vm'), $command, $wait);
 
 			if ($returnValue !== null) {
 				$commandController->echo($returnValue);

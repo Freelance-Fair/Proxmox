@@ -19,7 +19,7 @@ class ProxmoxController
 	public function __construct($node, $network)
 	{
 		$this->defaultNode = $node;
-		$this->network     = $network;
+		$this->network = $network;
 	}
 
 	/**
@@ -64,14 +64,24 @@ class ProxmoxController
 		$this->network = $network;
 	}
 
-	public function addToIpPool($ip): void
+	public function addToIpPool($ipOrRange): void
 	{
-		if (\is_array($ip)) {
-			foreach ($ip as $subIp) {
+		if (\is_array($ipOrRange)) {
+			foreach ($ipOrRange as $subIp) {
 				$this->addToIpPool($subIp);
 			}
 		} else {
-			$this->ipPool[] = $ip;
+			$matches = [];
+			if (preg_match('/^([0-9]+\.[0-9]+\.[0-9]+\.)([0-9]+)\-([0-9]+)$/', $ipOrRange, $matches) > 0) {
+				$ips = [];
+				for ($octet = $matches[2]; $octet <= $matches[3]; $octet++) {
+					$ips[] = $matches[1] . $octet;
+				}
+
+				$this->addToIpPool($ips);
+			} else {
+				$this->ipPool[] = $ipOrRange;
+			}
 		}
 	}
 
@@ -135,7 +145,7 @@ class ProxmoxController
 
 		$assignIp = $availableIps[$shuffle] ?? $availableIps[0];
 
-		$newId       = $this->getProxmox()->getFreeId();
+		$newId = $this->getProxmox()->getFreeId();
 		$returnValue = $this->getProxmox()->clone($this->getDefaultNode(), $templateId, $newId, ['name' => $name]);
 
 		// first, wait for clone to be ready. This means not locked and stopped
