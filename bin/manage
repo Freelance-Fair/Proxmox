@@ -19,20 +19,19 @@ use Proxmox\Proxmox;
 include_once dirname(__DIR__, 3) . '/autoload.php';
 
 $commandController = new CommandController();
-$settings = [
-	'proxmox' => ,
-	'build' => [
-		'targetNode' => $commandController->getArgument('target-node') ?? $_ENV['PROXMOX_TARGET_NODE'] ?? 'pve3',
-		'template' => $commandController->getArgument('template') ?? $_ENV['PROXMOX_TEMPLATE'] ?? 'template-current-live-v2',
-		'namePrefix' => $commandController->getArgument('name-prefix') ?? $_ENV['PROXMOX_NAME_PREFIX'] ?? 'feature-',
-		'hostTemplate' => $commandController->getArgument('host-template') ?? $_ENV['PROXMOX_HOST_TEMPLATE'] ?? '',
-		'network' => $commandController->getArgument('network') ?? $_ENV['PROXMOX_NETWORK'] ?? '',
-		'ipPool' => $commandController->getArgument('ip-pool') ?? $_ENV['PROXMOX_IP_POOL'] ?? '',
-		'upstream' => $commandController->getArgument('upstream') ?? $_ENV['PROXMOX_UPSTREAM'] ?? 'feature',
-	],
-];
-$commandController->setSetting('proxmox', $settings['proxmox']);
-$commandController->setSetting('build', $settings['build']);
+$commandController->setSetting('proxmox', [
+	'endpoint' => $commandController->getArgument('endpoint') ?? $_ENV['PROXMOX_ENDPOINT'] ?? '',
+	'token' => $commandController->getArgument('token') ?? $_ENV['PROXMOX_TOKEN'] ?? '',
+]);
+$commandController->setSetting('build', [
+	'targetNode' => $commandController->getArgument('target-node') ?? $_ENV['PROXMOX_TARGET_NODE'] ?? 'pve3',
+	'template' => $commandController->getArgument('template') ?? $_ENV['PROXMOX_TEMPLATE'] ?? 'template-current-live-v2',
+	'namePrefix' => $commandController->getArgument('name-prefix') ?? $_ENV['PROXMOX_NAME_PREFIX'] ?? 'feature-',
+	'hostTemplate' => $commandController->getArgument('host-template') ?? $_ENV['PROXMOX_HOST_TEMPLATE'] ?? '',
+	'network' => $commandController->getArgument('network') ?? $_ENV['PROXMOX_NETWORK'] ?? '',
+	'ipPool' => $commandController->getArgument('ip-pool') ?? $_ENV['PROXMOX_IP_POOL'] ?? '',
+	'upstream' => $commandController->getArgument('upstream') ?? $_ENV['PROXMOX_UPSTREAM'] ?? 'feature',
+]);
 
 $proxmox = new Proxmox($commandController->getSetting('proxmox.endpoint'));
 $proxmox->setToken($commandController->getSetting('proxmox.token'));
