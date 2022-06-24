@@ -65,6 +65,15 @@ $settings = [
 			'ippool' => $ipPool15,
 			'upstream' => 'epic',
 		],
+		'hubspot' => [
+			'targetNode' => 'pve2',
+			'template' => null,
+			'namePrefix' => 'hubspot-',
+			'hostTemplate' => $_ENV['PROXMOX_HOST_TEMPLATE'],
+			'network' => $_ENV['PROXMOX_NETWORK'],
+			'ippool' => [],
+			'upstream' => null,
+		],
 	],
 ];
 
