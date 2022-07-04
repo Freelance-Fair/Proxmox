@@ -7,8 +7,8 @@ use Proxmox\Command\CommandInterface;
 class CommandController
 {
 	private $arguments = [];
-	private $settings  = [];
-	private $commands  = [];
+	private $settings = [];
+	private $commands = [];
 
 	public function __construct()
 	{
@@ -95,12 +95,12 @@ class CommandController
 		$this->commands[$command->getName()] = $command;
 	}
 
-	public function runCommand(?string $command): void
+	public function runCommand(?string $command): bool
 	{
 		if (!array_key_exists($command, $this->commands)) {
-			echo 'available commands: ' . implode(',', array_keys($this->commands)) . "\n";
+			$this->echo('available commands: ' . implode(',', array_keys($this->commands)));
 
-			return;
+			return false;
 		}
 
 		/** @var CommandInterface $commandObject */
@@ -109,17 +109,19 @@ class CommandController
 		$this->setDefaultArguments($commandObject->getArguments());
 
 		if (!$this->hasArguments($commandObject->getRequiredArguments())) {
-			echo 'missing arguments for ' . $command . '. Required: ' . implode(',', $commandObject->getRequiredArguments()) . "\n";
+			$this->echo('missing arguments for ' . $command . '. Required: ' . implode(',', $commandObject->getRequiredArguments()));
 
-			return;
+			return false;
 		}
 
 		try {
 			$commandObject->run($this);
 		} catch (\Exception $e) {
 			$this->echo($e->getMessage());
-			exit(1);
+			return false;
 		}
+
+		return true;
 	}
 
 	public function echo($param): void

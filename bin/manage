@@ -33,6 +33,11 @@ $commandController->setSetting('build', [
 	'upstream' => $commandController->getArgument('upstream') ?? $_ENV['PROXMOX_UPSTREAM'] ?? 'feature',
 ]);
 
+$vm = $_ENV['PROXMOX_VM'] ?? null;
+if (!$commandController->hasArgument('vm') && $vm !== null) {
+	$commandController->setDefaultArguments(['vm' => $vm]);
+}
+
 $proxmox = new Proxmox($commandController->getSetting('proxmox.endpoint'));
 $proxmox->setToken($commandController->getSetting('proxmox.token'));
 
@@ -48,4 +53,8 @@ $commandController->addCommand(new CommandCopy($proxmoxController));
 $commandController->addCommand(new CommandUpstreamGenerate($proxmoxController));
 $commandController->addCommand(new CommandUpstreamDeploy($proxmoxController));
 
-$commandController->runCommand($commandController->getArgument('action'));
+$success = $commandController->runCommand($commandController->getArgument('action'));
+
+if (!$success) {
+    exit(1);
+}
